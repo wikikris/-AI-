@@ -14,8 +14,8 @@
 
 ## 截图
 
-![仪表盘](https://via.placeholder.com/800x400/11141b/e8ebf0?text=Dashboard)
-![分析详情](https://via.placeholder.com/800x400/11141b/e8ebf0?text=Position+Detail)
+![仪表盘](screenshots/dashboard.png)
+![分析详情](screenshots/detail.png)
 
 ## 快速开始
 
