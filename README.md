@@ -21,8 +21,8 @@
 
 ```powershell
 # 方式一：用 Git 克隆（推荐）
-git clone https://github.com/wikikris/-AI-.git
-cd -AI-
+git clone https://github.com/wikikris/futures-position-AI-analyzer.git
+cd futures-position-AI-analyzer
 
 # 方式二：或者直接从 GitHub 网页点 Code → Download ZIP，解压后进入文件夹
 ```
