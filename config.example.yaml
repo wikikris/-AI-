@@ -1,0 +1,24 @@
+contracts:
+  - code: RB2610
+    variety: 螺纹钢
+    exchange: SHFE
+  - code: I2609
+    variety: 铁矿石
+    exchange: DCE
+  - code: M2609
+    variety: 豆粕
+    exchange: DCE
+
+fetcher:
+  schedule_time: '16:30'
+  retry: 3
+
+ai:
+  api_key: ''          # 在 Web 设置页填写
+  base_url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  temperature: 0.3
+  max_tokens: 3000
+
+database:
+  path: data/futures.db
