@@ -90,8 +90,8 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 |---|---|---|---|---|
 | AKShare + Sina | FastAPI + SQLite | Vue3 + ECharts | APScheduler | OpenAI 兼容接口 |
 
-## 注意事项
+## 常见问题
 
-- `config.yaml` 包含你的 API Key，已加入 `.gitignore`，不会被上传
-- 项目开源地址需要修改配置后重新 push 时不会泄露你的密钥
-- 首次采集需要联网，AKShare 会从交易所/新浪拉取数据
+- 采集数据没反应：检查合约代码是否过期，换成当前活跃合约
+- AI 分析没有内容：检查 API Key 是否正确填写
+- 页面图表不显示：按 `Ctrl+Shift+R` 强制刷新浏览器
