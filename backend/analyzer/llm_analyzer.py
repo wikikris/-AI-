@@ -53,11 +53,11 @@ SYSTEM_PROMPT = """你是一位期货持仓分析师。基于量价数据、机�
 ## 格式规则
 
 - **严禁**任何开场白、客套话、称呼，直接输出报告正文
-- **严禁**使用 Markdown 表格、加粗、分割线等排版装饰
-- 用纯文本分段，每段标题用【】括起来
-- 引用数据时必须带具体数字和机构名称
-- 整篇报告控制在 1200 字以内
-- 结论必须从数据归纳得出，不能先定方向再找证据
+- **严禁**使用 Markdown 表格、加粗、分割线
+- 纯文本分段，每段标题用【】
+- 引用数据必须带具体数字和机构名称
+- 控制在 1200 字以内
+- **如果在数据中找不到【机构持仓明细】，说明该品种无席位数据，跳过【席位深度追踪】段，直接写"该品种不公布机构持仓排名，无法进行席位分析"。严禁在没有数据时编造机构行为。**
 
 ## 输入数据的含义说明
 
@@ -719,10 +719,14 @@ def _build_ai_data_summary(contract_code: str, start_date: date, end_date: date,
         b = ind["basis"]
         lines.append(f"\n【基差】{b['nearby_code']}价差{b['spread']}({b['spread_pct']:+.2f}%) {b['alert']}")
 
-    # ---- 速查 ----
-    lines.append(f"\n【机构速查】")
-    for name, prof in INSTITUTION_PROFILES.items():
-        lines.append(f"  {name}: {prof['indicator']}")
+    # ---- 速查：仅在有机构数据时提供 ----
+    has_members = bool(ind.get("latest_members"))
+    if has_members:
+        lines.append(f"\n【机构速查】")
+        for name, prof in INSTITUTION_PROFILES.items():
+            lines.append(f"  {name}: {prof['indicator']}")
+    else:
+        lines.append(f"\n【机构数据】该品种无交易所公布的机构持仓排名数据，请跳过报告中的【席位深度追踪】段，直接说明'该品种不公布机构持仓排名，无法进行席位分析'。")
 
     lines.append(f"\n--- 以上: 持仓数据为核心，技术面仅辅助验证 ---")
 

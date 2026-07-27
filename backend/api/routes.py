@@ -20,6 +20,7 @@ from backend.fetcher.akshare_fetcher import (
 from backend.analyzer.llm_analyzer import (
     generate_analysis, save_analysis, get_latest_analysis, get_analysis_history, chat_followup,
 )
+from backend.alert_engine import check_all, get_seat_accuracy, get_brief
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,8 @@ def add_contract(req: ContractRequest):
         if c["code"].upper() == req.code.upper():
             raise HTTPException(400, f"合约 {req.code} 已存在")
     contracts.append({"code": req.code.upper(), "variety": req.variety or "", "exchange": req.exchange or ""})
+    save_config(config)
+    reload_config()
     return {"status": "ok", "message": f"已添加合约 {req.code}"}
 
 
@@ -77,6 +80,8 @@ def remove_contract(code: str):
     for i, c in enumerate(contracts):
         if c["code"].upper() == code.upper():
             contracts.pop(i)
+            save_config(config)
+            reload_config()
             return {"status": "ok", "message": f"已移除合约 {code}"}
     raise HTTPException(404, f"未找到合约 {code}")
 
@@ -350,6 +355,10 @@ def overview(db: Session = Depends(get_db)):
         if len(oi_rows) >= 2:
             oi_5d_chg = oi_rows[0].open_interest - oi_rows[-1].open_interest
 
+        oi_change_pct = 0
+        if oi_latest and oi_latest.open_interest and oi_latest.oi_change:
+            oi_change_pct = round(oi_latest.oi_change / oi_latest.open_interest * 100, 2)
+
         items.append({
             "contract_code": code,
             "variety": get_variety_for_code(code),
@@ -357,6 +366,7 @@ def overview(db: Session = Depends(get_db)):
             "close": oi_latest.close_price if oi_latest else 0,
             "open_interest": oi_latest.open_interest if oi_latest else 0,
             "oi_change_daily": oi_latest.oi_change if oi_latest else 0,
+            "oi_change_pct": oi_change_pct,
             "oi_change_5d": oi_5d_chg,
             "volume": oi_latest.volume if oi_latest else 0,
         })
@@ -439,6 +449,33 @@ def get_analysis(code: str):
 @router.get("/analysis/{code}/history")
 def get_analysis_hist(code: str, limit: int = 20):
     return {"contract_code": code, "history": get_analysis_history(code, limit)}
+
+
+@router.get("/export/{code}")
+def export_data(code: str, db: Session = Depends(get_db)):
+    """导出CSV: 合约OI + 机构持仓"""
+    import csv, io
+    output = io.StringIO()
+    w = csv.writer(output)
+
+    # OI header
+    oi_rows = db.query(ContractOI).filter(ContractOI.contract_code == code.upper()).order_by(ContractOI.trade_date.asc()).all()
+    w.writerow(["=== 合约日线数据 ==="])
+    w.writerow(["日期","开盘","最高","最低","收盘","结算","成交量","持仓量","OI变化"])
+    for r in oi_rows:
+        w.writerow([str(r.trade_date),r.open_price,r.high_price,r.low_price,r.close_price,r.settle_price,r.volume,r.open_interest,r.oi_change])
+
+    # Member header
+    w.writerow([])
+    w.writerow(["=== 机构持仓数据 ==="])
+    members = db.query(MemberPosition).filter(MemberPosition.symbol == code.upper()).order_by(MemberPosition.trade_date.desc(),MemberPosition.net_position.desc()).all()
+    w.writerow(["日期","机构名称","多头持仓","多头日变","空头持仓","空头日变","净持仓","净日变","成交量"])
+    for m in members:
+        w.writerow([str(m.trade_date),m.member_name,m.long_position,m.long_change,m.short_position,m.short_change,m.net_position,m.net_change,m.volume])
+
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(iter([output.getvalue()]),media_type="text/csv",headers={"Content-Disposition":f"attachment;filename={code}_export.csv"})
 
 
 class ChatMessage(BaseModel):
@@ -538,3 +575,34 @@ def update_ai(req: ConfigAI):
     save_config(config)
     reload_config()
     return {"status": "ok"}
+
+
+# ============ 预警 + 简报 + 命中率 ============
+
+@router.get("/alerts/{code}")
+def get_alerts(code: str):
+    return {"code": code, "alerts": check_all(code)}
+
+
+@router.get("/alerts")
+def get_all_alerts(db: Session = Depends(get_db)):
+    contracts = get_contracts()
+    all_alerts = []
+    for c in contracts:
+        for a in check_all(c["code"]):
+            all_alerts.append({"contract": c["code"], **a})
+
+    # Brief
+    from backend.analyzer.llm_analyzer import _compute_indicators
+    indicators = {}
+    for c in contracts:
+        today = date.today()
+        indicators[c["code"]] = _compute_indicators(c["code"], today - timedelta(days=7), today)
+    brief = get_brief([c["code"] for c in contracts], indicators)
+
+    return {"alerts": all_alerts, "brief": brief}
+
+
+@router.get("/seats/{code}/accuracy")
+def seat_accuracy(code: str):
+    return {"code": code, "seats": get_seat_accuracy(code)}

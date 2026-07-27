@@ -72,13 +72,14 @@ def save_contract_oi(contract_code: str):
             if existing is None:
                 oi_val = _parse_int(row.get(oi_col)) if oi_col else 0
 
-                prev_date = t_date - timedelta(days=1)
+                # Find most recent previous date (skip weekends)
                 prev_row = (
                     db.query(ContractOI)
                     .filter(
                         ContractOI.contract_code == contract_code,
-                        ContractOI.trade_date == prev_date,
+                        ContractOI.trade_date < t_date,
                     )
+                    .order_by(ContractOI.trade_date.desc())
                     .first()
                 )
                 oi_change = oi_val - prev_row.open_interest if prev_row else 0
