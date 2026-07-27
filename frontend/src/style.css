@@ -66,3 +66,8 @@ table th:not(:first-child),table td:not(:first-child){text-align:right}
 @media(max-width:960px){.grid-2{grid-template-columns:1fr}}
 
 .loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--txt3);font-size:12px}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#252a35;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#3a4050}
