@@ -6,11 +6,14 @@
 
 ### v2.1 (2026-07)
 
-- **K线图替代量价折线** — 蜡烛图 + MA5/MA10/MA20 均线 + 成交量柱，支持滚轮缩放，悬浮显示完整 OHLC
-- **价格速览条** — K线下方 7 格实时数据：收盘、涨跌、最高、最低、成交量、持仓量、日增仓，涨跌红绿着色
-- **暗色现代化 UI** — 全新设计系统：指标卡片、彩色分析摘要（左侧彩条）、聊天气泡（你/AI 角色标签 + 三点动画）、等宽数字排版、吸顶毛玻璃导航栏
-- **智能预警引擎** — 合约换月检测、Top3 集中度 >60% 预警、席位历史准确率（正指/反指）自动统计
-- **分析摘要折叠** — 仪表盘默认显示 5 条分析，可展开全部，避免大段空白
+- **K线图替代量价折线** — 蜡烛图 + MA5/MA10/MA20 均线 + 成交量柱，支持滚轮缩放，悬浮显示完整 OHLC + 涨跌差价
+- **液态玻璃 UI** — 全界面毛玻璃效果：`backdrop-filter` 多层模糊 + 镜面高光镶边 + 环境光晕 + 层次深度感
+- **独立 EXE 打包** — PyInstaller 一键打包为 `FuturesPA.exe`，无需安装 Python/Node.js，双击即用
+- **聊天持久化** — 追问内容自动保存到浏览器，切换页面/重启不会丢失
+- **仪表盘"聊"按钮** — 直接从首页跳转合约详情页追问 AI
+- **分析报告日期范围** — 报告标题显示实际数据区间（如 `2026-06-01 ~ 2026-07-27`）
+- **智能预警引擎** — 合约换月检测、席位历史准确率（正指/反指）自动统计
+- **分析摘要折叠** — 仪表盘默认显示 5 条分析，可展开全部
 - **启动脚本优化** — `start.bat` 自动杀掉 8000 端口旧进程
 - **安全性** — `config.yaml` 加入 `.gitignore`，API Key 不会被提交
 
@@ -27,11 +30,19 @@
 
 ## 你需要准备
 
+**方式一（推荐）：直接下载 EXE，无需安装任何环境**
+
+从 [GitHub Releases](https://github.com/wikikris/futures-position-AI-analyzer/releases) 下载 `FuturesPA.exe`，双击运行即可。首次启动会自动创建默认配置文件。
+
+> 仅支持 Windows 64 位，约 337MB，自带 Python 运行时 + 所有依赖。
+
+**方式二：从源码运行**
+
 - **Python 3.10+**（[下载](https://www.python.org/downloads/)）
 - **Node.js 18+**（[下载](https://nodejs.org/)）
 - **Git**（[下载](https://git-scm.com/downloads)），或者直接从 GitHub 网页下载 ZIP
 
-## 安装教程
+## 从源码安装
 
 ### 第一步：下载项目
 
@@ -83,6 +94,16 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 
 ### 第六步：配置并开始使用
 
+```powershell
+# 安装 PyInstaller
+pip install pyinstaller
+
+# 双击 build_exe.bat 或在终端运行：
+pyinstaller --name=FuturesPA --onefile --console --add-data="frontend/dist;frontend/dist" --add-data="config.example.yaml;." --collect-data=akshare launcher.py
+
+# 输出: dist\FuturesPA.exe (~337MB)
+```
+
 1. 点击顶部 **设置**，填写你的 AI API Key（支持 OpenAI / DeepSeek 等兼容接口）
 2. 在 **关注合约** 区域添加你想跟踪的合约，如 `RB2610`、`I2609`
 3. 保存后回到仪表盘，点击 **采集数据**
@@ -117,3 +138,18 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 - AI 分析没有内容：检查 API Key 是否正确填写
 - 页面图表不显示 / 样式异常：按 `Ctrl+Shift+R` 强制刷新浏览器清除缓存
 - K线均线不完整：系统已自动扩展数据范围填充 MA，若仍有问题请强制刷新
+- EXE 启动后浏览器没打开：手动访问 `http://127.0.0.1:8000`
+
+## 自行打包 EXE
+
+```powershell
+pip install pyinstaller
+pyinstaller --name=FuturesPA --onefile --console ^
+  --add-data="frontend/dist;frontend/dist" ^
+  --add-data="config.example.yaml;." ^
+  --collect-data=akshare ^
+  launcher.py
+# 输出: dist\FuturesPA.exe (~337MB)
+```
+
+或直接双击 `build_exe.bat`。
