@@ -8,6 +8,8 @@ data/*.db
 config.yaml
 *.exe
 build/
+dist/
+*.spec
 .env
 *.log
 .vscode/

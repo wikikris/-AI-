@@ -1,12 +1,26 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, DateTime, Text, Index
 from sqlalchemy.orm import sessionmaker, declarative_base
 from datetime import datetime
-
 from backend.config_loader import get_db_path
 
-engine = create_engine(f"sqlite:///{get_db_path()}", echo=False, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
+
+
+class _LazySession:
+    _maker = None
+
+    @classmethod
+    def _get_maker(cls):
+        if cls._maker is None:
+            engine = create_engine(f"sqlite:///{get_db_path()}", echo=False, connect_args={"check_same_thread": False})
+            cls._maker = sessionmaker(bind=engine)
+        return cls._maker
+
+    def __call__(self, **kwargs):
+        return self._get_maker()(**kwargs)
+
+
+SessionLocal = _LazySession()
 
 
 def get_db():
@@ -115,4 +129,5 @@ class AnalysisReport(Base):
 
 
 def init_db():
+    engine = create_engine(f"sqlite:///{get_db_path()}", echo=False, connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)

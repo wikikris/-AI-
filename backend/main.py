@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from backend.api.routes import router
 from backend.models.database import init_db
 from backend.scheduler import start_scheduler, stop_scheduler
+from backend.config_loader import _is_packaged, _exe_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,7 +22,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-FRONTEND_DIST = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+if _is_packaged():
+    FRONTEND_DIST = os.path.join(sys._MEIPASS, "frontend", "dist")
+else:
+    FRONTEND_DIST = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
 
 
 @asynccontextmanager

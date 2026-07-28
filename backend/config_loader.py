@@ -1,8 +1,20 @@
 import os
 import re
+import sys
+
 import yaml
 
 _CONFIG = None
+
+
+def _is_packaged() -> bool:
+    return getattr(sys, 'frozen', False)
+
+
+def _exe_dir() -> str:
+    if _is_packaged():
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.dirname(__file__))
 
 # 品种代码 -> 中文名称
 CODE_TO_VARIETY = {
@@ -28,7 +40,7 @@ def load_config(path: str = None) -> dict:
         return _CONFIG
 
     if path is None:
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+        path = os.path.join(_exe_dir(), "config.yaml")
 
     with open(path, "r", encoding="utf-8") as f:
         _CONFIG = yaml.safe_load(f)
@@ -102,7 +114,7 @@ _CONFIG_PATH = None
 def _config_path():
     global _CONFIG_PATH
     if _CONFIG_PATH is None:
-        _CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+        _CONFIG_PATH = os.path.join(_exe_dir(), "config.yaml")
     return _CONFIG_PATH
 
 
@@ -125,7 +137,7 @@ def get_db_path() -> str:
     config = load_config()
     db_path = config.get("database", {}).get("path", "data/futures.db")
     if not os.path.isabs(db_path):
-        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), db_path)
+        db_path = os.path.join(_exe_dir(), db_path)
     db_dir = os.path.dirname(db_path)
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
