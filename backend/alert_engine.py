@@ -167,3 +167,75 @@ def get_brief(contract_codes: list, indicators_data: dict) -> str:
     if not lines:
         return "今日无异常数据"
     return " | ".join(lines)
+
+
+def get_divergence_index(contract_code: str) -> dict:
+    """多空分歧指数：席位净持仓标准差 / 总OI，量化市场分裂程度"""
+    from backend.models.database import SessionLocal, ContractOI, MemberPosition
+    from statistics import stdev
+    db = SessionLocal()
+    try:
+        oi_rows = (
+            db.query(ContractOI)
+            .filter(ContractOI.contract_code == contract_code.upper())
+            .order_by(ContractOI.trade_date.asc())
+            .all()
+        )
+        if not oi_rows:
+            return {"code": contract_code, "data": []}
+
+        # Build date->total OI map
+        date_oi = {str(r.trade_date): r.open_interest for r in oi_rows if r.open_interest > 0}
+
+        members = (
+            db.query(MemberPosition)
+            .filter(MemberPosition.symbol == contract_code.upper())
+            .order_by(MemberPosition.trade_date.asc())
+            .all()
+        )
+
+        from collections import defaultdict
+        daily_nets = defaultdict(list)
+        for m in members:
+            dt = str(m.trade_date)
+            if dt in date_oi and m.net_position != 0:
+                daily_nets[dt].append(m.net_position)
+
+        data = []
+        for dt in sorted(daily_nets.keys()):
+            nets = daily_nets[dt]
+            total_oi = date_oi.get(dt, 1)
+            if len(nets) < 3 or total_oi == 0:
+                continue
+            # Divergence = stddev(net positions) / total OI
+            sd = stdev(nets)
+            idx = round(sd / total_oi * 10000, 2)  # scale for readability
+            # Skew: mean of net positions (positive = long bias, negative = short bias)
+            skew = round(sum(nets) / len(nets) / total_oi * 10000, 2)
+            data.append({"date": dt, "divergence": idx, "skew": skew, "members": len(nets)})
+
+        # Current level assessment
+        if data:
+            latest = data[-1]["divergence"]
+            all_divs = [d["divergence"] for d in data]
+            pct = sum(1 for v in all_divs if v < latest) / len(all_divs) * 100
+            if pct >= 80:
+                level = "高分歧"
+            elif pct >= 50:
+                level = "中等"
+            else:
+                level = "低分歧"
+        else:
+            latest = 0
+            pct = 50
+            level = "无数据"
+
+        return {
+            "code": contract_code,
+            "data": data,
+            "latest": latest,
+            "percentile": round(pct),
+            "level": level,
+        }
+    finally:
+        db.close()

@@ -67,63 +67,56 @@ SYSTEM_PROMPT = """你是一位期货持仓分析师。基于量价数据、机�
 - 净持仓 = 多头 - 空头
 - 多空比 = 所有机构多头总量 ÷ 空头总量
 
+## 分析前必须做的数据诊断（每一步都要有）
+
+1. **合约阶段判断**：本期 OI 相对 90 天前增长了多少倍？如果 >3 倍，说明本期数据跨越了合约从非主力到主力的成熟过程。此时 OI 的绝对值增长不是主力行为信号，**只分析最近 20 天内的 OI 变化方向和席位日变**，不要参考早期低 OI 数据。如果本期起始 OI < 5 万手，在报告开头标注"(成长期，数据含非主力阶段)"。如果当前 OI 比 20 天前下降 >12%，标注"(换月进行中)"。换月期间的首要问题是"资金在往哪个新合约迁移"而非"多空谁占优"——换月期的席位加减仓可能是移仓行为而非方向性判断。
+
+2. **价格裁决原则**：价格是最终裁决者。当 OI 变动 >10% 但价格变动 <1% 时，说明多空双方在大规模对锁但价格未突破，胜负未分。此时不要归因给任何一方推动价格，直接写"当前多空僵持，双方都在加注但未分出方向"。不要强行把 OI 变动解读为即将爆发的信号。
+
+3. **压缩酝酿检测**：当同时满足三个条件时标注为"压缩酝酿期"：(1)价格连续 5 日振幅 <1% (2)OI 持续积累而非下降 (3)多空净持仓差距在收窄。此时输出预警："市场正在积蓄能量，短期内可能出现方向性突破，但方向尚不明确，关注突破后跟进的主力席位是谁。"
+
+4. **农产品波动特性**：如果是农产品（豆粕、玉米、白糖等），默认周度趋势反转率高于工业品。不要在农产品上过度外推短期方向。如果数据中出现了剧烈反转（本期涨 >1% 但后续周跌 >1%），要明确指出"该品种近期趋势持续性弱"而非强行归因。
+
+5. **有色金属换月频率**：铜、铝等有色金属合约活跃期极短（通常 1-2 个月），主力每月切换。任何超过1个月的分析必然跨越合约切换。跨合约切换时的价格连续性中断不是趋势改变——只是换到了不同到期日的合约。不要用新合约的价格变化解释旧合约的持仓行为，也不要把换月前后的价差异常当作市场方向信号。分析时始终以【换月检测】段中标注的实际主力切换时间为准。
+
 ## 分析框架
 
 核心思路：每一步分析都要回答"谁在做什么，为什么，意味着什么"。
 
-【持仓驱动力拆解】 ← 第1段
+注意：参考20日趋势作为背景，但不预设结论。每个结论必须引用具体机构名称和数字。
 
-不要先下结论。先拆数据，再归纳。
+## 内部推演流程（不在输出中显示，但必须执行）
 
-1. 本期整体发生了什么：价格涨跌多少？OI增还是减？多空比变化？
-2. 拆解驱动力：
-   - 多头侧：谁在加多？谁在减多？多头总量净变化多少？
-   - 空头侧：谁在加空？谁在减空？空头总量净变化多少？
-   - 哪一方的动作主导了价格变化？（比较多头净变化 vs 空头净变化的绝对值）
-3. 归纳：这轮价格变动主要是谁在推动？用的什么方式（增仓进攻/减仓撤退）？
-4. 给出现状画像：经过本期变化后，多空双方各处于什么状态？
+在输出报告之前，你必须在思维中完成以下步骤：
 
-注意：参考20日趋势作为背景，但不预设结论。20日涨了6%而本周跌了1%，可能只是回调，也可能真的是多头在撤退——具体要看数据里谁在减仓、减了多少。
+1. 站多头：如果我是多头，基于现有数据最多能拿出什么论据？找出所有对多头有利的数据——谁在加多、OI在累积、价格站上均线。
+2. 站空头：如果我是空头，基于现有数据最多能拿出什么论据？找出所有对空头有利的数据——谁在加空、OI在下降、价格破支撑。
+3. 交锋：多方的核心论据能否被空方数据驳倒？空方的核心论据是否被多方数据削弱？找到双方论据中无法被对方反驳的那个——那是当前最硬的信号。
+4. 裁决：多空谁的数据更硬？如果双方都有无法反驳的论据且互相矛盾，说明市场在博弈中——裁决为"未决"。如果一方明显压倒另一方，裁决为"偏多"或"偏空"。如果多空论据都很弱（量价背离、无明显方向），裁决为"观望"。
+5. 可操作判断：基于裁决，当前适合做多/做空/观望？仓位应该轻还是重？止损放在哪里？
+6. 反向检查：如果我的裁决错了，最可能的原因是什么？有没有数据支持这种可能？
 
-示例（这才叫从数据出发）：
-"本周多头总量减x万手，其中A席位减y万手、B席位减z万手，合计占多头总减量的70%。空头总量基本不变。价格跌1.2%主要由多头主动平仓驱动。结合20日背景看，20日内多头曾增仓a万手推动价格涨6%，本周部分多头选择在反弹高位止盈。这是获利了结而非趋势逆转——除非接下来多头继续大幅减仓。"
-2. 如果是减仓驱动的价格变化，谁在减？减了多少？为什么减（止盈/止损/换月）？
-3. 增量资金的方向：新开仓的钱去了多头还是空头？新增的头寸代表了什么预期？
-4. 多空双方的博弈状态：是一方压倒性优势，还是势均力敌？OI在扩张还是收缩？
-5. 绝对水平：当前OI在近期历史中处于什么位置？天量OI意味着分歧极大，低OI意味着方向已明或无人关注
+只有做完以上6步后，你才能输出最终的【结论报告】。
 
-示例分析逻辑链：
-"价格涨了6%但OI降了43万手 → 不是多头主动进攻，是空头大规模平仓 → 看数据发现国泰君安净空单日减1.2万手、中信净空减0.4万手 → 正指空头主力撤退 → 反弹由空头踩踏离场驱动 → 可持性取决于空头是否继续离场、多头是否跟进"
+## 输出结构（严格按此顺序，只输出结论）
 
-每个结论必须引用具体机构名称和数字。
+【核心判断】
+用1句话给出你的裁决和可操作建议。格式："偏多/偏空/观望 —— 核心原因是XXX，建议XXX。"
 
-【席位深度追踪】 ← 第2段
+【持仓驱动力拆解】
+本期什么力量推动了价格？多头侧谁在动？空头侧谁在动？哪一方主导？
 
-不是罗列席位，而是追踪"谁在动"：
-- 本期净持仓变化最大的5个席位具体做了什么？多增还是空减？
-- 有没有席位出现方向性转向（多翻空/空翻多）？转向幅度多大？
-- 如果多个席位同时向同一方向转向，这是集体行为信号，权重极高
-- 席位行为的"组团"特征：中信系（中信期货+中信建投）是否一致？产业系（永安+一德）是否同向？
-- 正指反指作为参考注记即可，不须单独成段：在提到某席位时用括号标注"(正指)"或"(反指)"即可
+【席位追踪】
+净变化最大的3个席位做了什么？有没有方向性转向？
 
-【多周期验证】 ← 第3段
+【多空矛盾】
+如果本期多空双方信号方向一致（都偏多或都偏空），直接写"无矛盾，信号一致"。如果双方信号方向相反（比如价格跌但席位在加多），才指出矛盾点和各自证据。不要为了制造矛盾而强行找茬。
 
-以20日趋势为锚点，判断本期行为：
-- 20日趋势方向是什么？本期是顺应还是回调？
-- 回调是否破坏20日趋势？看持仓变化：OI在顺势还是逆势？
-- 如果20日多头 + 本期减仓下跌 = 多头趋势中的调整，关注多头是否仍在还是大规模离场
-- 对比本期OI变化速度 vs 20日平均变化速度，判断是否加速/减速
+【关键位】
+技术面上关键的支撑/压力位在哪？突破什么位置会改变判断？
 
-【技术面参考】 ← 第4段，不超过5行
-
-仅用均线排列和关键位做确认，不展开分析。持仓结论为主。
-
-【综合研判】
-
-- 核心叙事：用2-3句话总结当前持仓格局的核心矛盾
-- 驱动力归因：价格变化X%来自什么持仓行为（量化归因）
-- 可持性判断：当前格局能持续吗？什么情况下会被打破？
-- 关键观察点：接下来盯哪个席位、哪个数据？
+【风险提示】
+如果判断错了，最可能的原因是什么？（2行）
 """
 
 
@@ -728,9 +721,109 @@ def _build_ai_data_summary(contract_code: str, start_date: date, end_date: date,
     else:
         lines.append(f"\n【机构数据】该品种无交易所公布的机构持仓排名数据，请跳过报告中的【席位深度追踪】段，直接说明'该品种不公布机构持仓排名，无法进行席位分析'。")
 
+    # ---- 换月检测 ----
+    rollover_info = _detect_rollover(contract_code, start_date, end_date)
+    if rollover_info:
+        lines.append(f"\n【换月检测】")
+        for line in rollover_info:
+            lines.append(f"  {line}")
+
     lines.append(f"\n--- 以上: 持仓数据为核心，技术面仅辅助验证 ---")
 
     return "\n".join(lines)
+
+
+def _detect_rollover(contract_code: str, start_date: date, end_date: date) -> list:
+    """检测分析期内是否发生了主力合约切换"""
+    from backend.models.database import SessionLocal, ContractOI
+    import re
+
+    # Extract variety prefix: must be letters followed by digits (e.g., RB2610→RB, C2609→C, CU2609→CU)
+    m = re.match(r'^([A-Z]+)\d+', contract_code.upper())
+    if not m:
+        return []
+    prefix = m.group(1)
+
+    db = SessionLocal()
+    try:
+        # Get all contracts of the same variety - filter by prefix AND ensure next char is a digit
+        all_codes = (
+            db.query(ContractOI.contract_code)
+            .filter(ContractOI.contract_code.like(f'{prefix}%'))
+            .distinct()
+            .all()
+        )
+        # Filter: contract code must start with prefix followed immediately by a digit (not another letter)
+        codes = sorted(set(
+            c[0] for c in all_codes
+            if re.match(rf'^{re.escape(prefix)}\d', c[0])
+        ))
+
+        # For each date, find max OI contract
+        from collections import defaultdict
+        daily = defaultdict(dict)
+        for code in codes:
+            rows = (
+                db.query(ContractOI)
+                .filter(
+                    ContractOI.contract_code == code,
+                    ContractOI.trade_date >= start_date,
+                    ContractOI.trade_date <= end_date,
+                )
+                .order_by(ContractOI.trade_date.asc())
+                .all()
+            )
+            for r in rows:
+                daily[str(r.trade_date)][code] = r.open_interest
+
+        if len(daily) < 5:
+            return []
+
+        # Track main contract per day
+        main_per_day = []
+        for d_str in sorted(daily.keys()):
+            oi_map = daily[d_str]
+            if oi_map:
+                main_code = max(oi_map, key=oi_map.get)
+                main_oi = oi_map[main_code]
+                main_per_day.append((d_str, main_code, main_oi))
+
+        if not main_per_day:
+            return []
+
+        # Detect switches
+        switches = []
+        prev_code = main_per_day[0][1]
+        for d_str, code, oi in main_per_day[1:]:
+            if code != prev_code:
+                switches.append((d_str, prev_code, code, oi))
+                prev_code = code
+
+        if not switches:
+            # No switch, but check if this contract is itself in rollover
+            current_code = main_per_day[-1][1]
+            first_oi = main_per_day[0][2]
+            last_oi = main_per_day[-1][2]
+            if first_oi > 0 and last_oi > 0 and last_oi < first_oi * 0.8:
+                return [f"当前合约 {contract_code} 正在换月中: OI 从 {first_oi:,} 降至 {last_oi:,} (降 {(1-last_oi/first_oi)*100:.0f}%)",
+                        f"注意: 期间席位的加减仓可能是在移仓到新合约，不代表方向性判断"]
+
+        lines = []
+        lines.append(f"分析期内发生 {len(switches)} 次主力合约切换:")
+        for d_str, old, new, oi in switches:
+            lines.append(f"  {d_str}: {old} → {new} (新主力 OI: {oi:,})")
+
+        if contract_code != main_per_day[-1][1]:
+            lines.append(f"注意: 当前分析的 {contract_code} 在期末已非主力合约，主力为 {main_per_day[-1][1]}")
+        else:
+            # Check if current contract is declining
+            recent_oi = [oi for d, c, oi in main_per_day[-10:] if c == contract_code]
+            if len(recent_oi) >= 5 and recent_oi[0] > recent_oi[-1] * 1.1:
+                lines.append(f"当前合约 {contract_code} OI 正在下降（{recent_oi[0]:,}→{recent_oi[-1]:,}），可能进入换月期")
+
+        return lines
+    finally:
+        db.close()
 
 
 # ============================================================
@@ -874,3 +967,87 @@ async def chat_followup(contract_code: str, question: str, analysis_context: str
             return resp.json()["choices"][0]["message"]["content"]
     except Exception as e:
         return f"[追问失败] {str(e)[:100]}"
+
+
+async def free_qa(contract_code: str, question: str, history: list = None):
+    """自由问答：基于实时数据回答用户的任意问题"""
+    ai_config = get_ai_config()
+    api_key = ai_config.get("api_key", "")
+    base_url = ai_config.get("base_url", "https://api.openai.com/v1")
+    model = ai_config.get("model", "gpt-4o-mini")
+
+    if not api_key:
+        return "未配置 AI API Key"
+
+    # Build data context from database
+    from datetime import date, timedelta
+    from backend.models.database import SessionLocal, ContractOI, MemberPosition
+
+    db = SessionLocal()
+    data_lines = []
+    try:
+        # Recent OI data
+        oi_rows = (
+            db.query(ContractOI)
+            .filter(ContractOI.contract_code == contract_code.upper())
+            .order_by(ContractOI.trade_date.desc())
+            .limit(30)
+            .all()
+        )
+        if oi_rows:
+            latest = oi_rows[0]
+            data_lines.append(f"最新数据({latest.trade_date}): 开{latest.open_price} 收{latest.close_price} 高{latest.high_price} 低{latest.low_price} 量{latest.volume} OI{latest.open_interest} OI变化{latest.oi_change}")
+            # 5-day trend
+            if len(oi_rows) >= 5:
+                pct = (oi_rows[0].close_price - oi_rows[4].close_price) / oi_rows[4].close_price * 100
+                oi_pct = (oi_rows[0].open_interest - oi_rows[4].open_interest) / max(oi_rows[4].open_interest, 1) * 100
+                data_lines.append(f"5日趋势: 价格{'+'if pct>=0 else ''}{pct:.1f}% OI{'+'if oi_pct>=0 else ''}{oi_pct:.1f}%")
+
+        # Member positions
+        members = (
+            db.query(MemberPosition)
+            .filter(MemberPosition.symbol == contract_code.upper())
+            .order_by(MemberPosition.trade_date.desc())
+            .limit(80)
+            .all()
+        )
+        if members:
+            latest_date = members[0].trade_date
+            latest_members = [m for m in members if m.trade_date == latest_date]
+            latest_members.sort(key=lambda m: abs(m.net_position), reverse=True)
+            data_lines.append(f"\n机构持仓({latest_date}) Top10:")
+            for m in latest_members[:10]:
+                data_lines.append(f"  {m.member_name}: 多{m.long_position}({'+'if m.long_change>=0 else ''}{m.long_change}) 空{m.short_position}({'+'if m.short_change>=0 else ''}{m.short_change}) 净{m.net_position}")
+    finally:
+        db.close()
+
+    context = "\n".join(data_lines) if data_lines else "暂无持仓数据"
+
+    system = f"""你是期货持仓分析助手。用户问什么你就答什么，基于下面的实时数据。
+
+{contract_code} 当前数据:
+{context}
+
+规则:
+- 直接回答问题，不要长篇分析报告
+- 问数据就列数据，问看法就给推理
+- 不知道就说不知道，不要编造
+- 300字以内"""
+
+    messages = [{"role": "system", "content": system}]
+    if history:
+        for h in history[-10:]:
+            messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+    messages.append({"role": "user", "content": question})
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                f"{base_url.rstrip('/')}/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": model, "messages": messages, "temperature": 0.5, "max_tokens": 1200},
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"[问答失败] {str(e)[:100]}"

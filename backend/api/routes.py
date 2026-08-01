@@ -18,9 +18,9 @@ from backend.fetcher.akshare_fetcher import (
     fetch_all,
 )
 from backend.analyzer.llm_analyzer import (
-    generate_analysis, save_analysis, get_latest_analysis, get_analysis_history, chat_followup,
+    generate_analysis, save_analysis, get_latest_analysis, get_analysis_history, chat_followup, free_qa,
 )
-from backend.alert_engine import check_all, get_seat_accuracy, get_brief
+from backend.alert_engine import check_all, get_seat_accuracy, get_brief, get_divergence_index
 
 logger = logging.getLogger(__name__)
 
@@ -501,6 +501,16 @@ async def chat(req: ChatRequest):
     return {"reply": reply}
 
 
+@router.post("/chat/ask")
+async def free_chat(req: ChatRequest):
+    reply = await free_qa(
+        contract_code=req.contract_code,
+        question=req.question,
+        history=req.history,
+    )
+    return {"reply": reply}
+
+
 # ============ 配置管理 ============
 
 class ConfigAI(BaseModel):
@@ -606,3 +616,8 @@ def get_all_alerts(db: Session = Depends(get_db)):
 @router.get("/seats/{code}/accuracy")
 def seat_accuracy(code: str):
     return {"code": code, "seats": get_seat_accuracy(code)}
+
+
+@router.get("/positions/{code}/divergence")
+def position_divergence(code: str):
+    return get_divergence_index(code)

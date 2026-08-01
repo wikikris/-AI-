@@ -26,7 +26,9 @@ export function triggerAnalysis({ contract_code, period, start_date, end_date, d
 }
 export function getAnalysis(code) { return api.get(`/analysis/${code}`); }
 export function chatFollowup(data) { return api.post("/analysis/chat", data); }
+export function freeChat(data) { return api.post("/chat/ask", data); }
 export function getLatestFetchDate() { return api.get("/fetch/latest-date"); }
+export function getSeatAccuracy(code) { return api.get(`/seats/${code}/accuracy`); }
 
 // Config
 export function getConfig() { return api.get("/config"); }

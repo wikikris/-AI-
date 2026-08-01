@@ -75,6 +75,7 @@
               <template v-else>
                 <button class="mini" @click="goAnalyze(a.code,'1w')">周</button>
                 <button class="mini" @click="goAnalyze(a.code,'1m')">月</button>
+                <button v-if="a.content" class="mini chat-btn" @click="$router.push(`/contract/${a.code}`)">聊</button>
               </template>
             </div>
             <div v-if="a.content" class="ana-text">{{ truncate(a.content,400) }}</div>
@@ -146,10 +147,22 @@ export default {
 .code-link{color:var(--blue);font-weight:600;transition:color var(--transition)}
 .code-link:hover{color:#6aade0}
 .mini{padding:3px 8px;font-size:10px}
+.chat-btn{border-color:rgba(59,130,246,.3);color:var(--blue)}
+.chat-btn:hover{border-color:var(--blue);background:rgba(59,130,246,.12)}
 .ana-list{display:flex;flex-direction:column;gap:5px}
 .ana-item{
-  background:var(--bg-elevated);border:1px solid var(--border-light);border-left:2px solid var(--blue);
+  position:relative;overflow:hidden;
+  background:rgba(20,26,36,.45);
+  backdrop-filter:blur(10px) saturate(130%);
+  -webkit-backdrop-filter:blur(10px) saturate(130%);
+  border:1px solid var(--border-light);border-left:2px solid var(--blue);
   border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 14px;transition:all var(--transition);
+  box-shadow:0 1px 0 rgba(255,255,255,.015) inset;
+}
+.ana-item::after{
+  content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;
+  background:radial-gradient(circle,rgba(255,255,255,.02) 0%,transparent 70%);
+  border-radius:50%;pointer-events:none;
 }
 .ana-item:nth-child(5n+2){border-left-color:var(--purple)}
 .ana-item:nth-child(5n+3){border-left-color:var(--cyan)}
